@@ -1,0 +1,21 @@
+# Build outputs
+bin/*.app
+bin/*.exe
+bin/obj
+bin/lib
+build
+*.o
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
