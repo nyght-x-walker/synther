@@ -1,10 +1,16 @@
 # Build outputs
 bin/*.app
 bin/*.exe
+bin/*/debug
+bin/*/release
+bin/libfmod.so
+bin/softwareSynthesizer
 bin/obj
 bin/lib
 build
+obj/
 *.o
+*.d
 
 # IDE / editor
 .vscode/
