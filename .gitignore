@@ -23,9 +23,5 @@ obj/
 .DS_Store
 Thumbs.db
 
-# Local-only project planning docs
-AGENTIC.md
-AGENTS.md
-
 # Logs
 *.log
