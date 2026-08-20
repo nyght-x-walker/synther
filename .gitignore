@@ -1,10 +1,16 @@
 # Build outputs
 bin/*.app
 bin/*.exe
+bin/*/debug
+bin/*/release
+bin/libfmod.so
+bin/softwareSynthesizer
 bin/obj
 bin/lib
 build
+obj/
 *.o
+*.d
 
 # IDE / editor
 .vscode/
@@ -16,6 +22,10 @@ build
 # OS
 .DS_Store
 Thumbs.db
+
+# Local-only project planning docs
+AGENTIC.md
+AGENTS.md
 
 # Logs
 *.log
