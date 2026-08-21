@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
+#include "SineVoice.h"
 
 class ofApp : public ofBaseApp{
 
@@ -9,6 +10,8 @@ class ofApp : public ofBaseApp{
 		void update() override;
 		void draw() override;
 		void exit() override;
+
+		void audioOut(ofSoundBuffer& buffer) override;
 
 		void keyPressed(int key) override;
 		void keyReleased(int key) override;
@@ -22,5 +25,12 @@ class ofApp : public ofBaseApp{
 		void windowResized(int w, int h) override;
 		void dragEvent(ofDragInfo dragInfo) override;
 		void gotMessage(ofMessage msg) override;
-		
+
+		// Audio
+		ofSoundStream soundStream; // audio stream to the device
+		SineVoice voice;           // sine oscillator voice
+
+		int sampleRate = 44100;    // audio sample rate in Hz
+		bool noteHeld = false;     // true while a mapped key is held down
+		float currentFreq = 0.0f;  // frequency of the note currently held
 };
