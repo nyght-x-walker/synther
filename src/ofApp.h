@@ -44,6 +44,7 @@ class ofApp : public ofBaseApp{
 		int sampleRate = 44100;    // audio sample rate in Hz
 		bool noteHeld = false;     // true while a mapped key is held down
 		float currentFreq = 0.0f;  // frequency of the note currently held
+		float currentVelocity = 0.5f; // velocity of the current note 0..1
 
 		// Visualizer
 		// - stores recent audio for drawing
