@@ -21,4 +21,6 @@ public:
     float volume;
 
     bool noteOn;
+
+    bool keyDown[9];
 };
