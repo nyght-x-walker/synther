@@ -4,6 +4,9 @@
 #include "SineVoice.h"
 #include "SquareVoice.h"
 #include "NoiseVoice.h"
+#include "Visualizer.h"
+#include <mutex>
+#include <vector>
 
 class ofApp : public ofBaseApp{
 
@@ -41,4 +44,14 @@ class ofApp : public ofBaseApp{
 		int sampleRate = 44100;    // audio sample rate in Hz
 		bool noteHeld = false;     // true while a mapped key is held down
 		float currentFreq = 0.0f;  // frequency of the note currently held
+		float currentVelocity = 0.5f; // velocity of the current note 0..1
+
+		// Visualizer
+		// - stores recent audio for drawing
+		// - lastAudioBuffer is shared between audio and main threads
+		Visualizer visualizer;
+		std::vector<float> lastAudioBuffer;
+		int lastBufferSize = 256;
+		int lastNumChannels = 2;
+		std::mutex audioMutex;
 };

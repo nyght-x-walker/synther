@@ -18,16 +18,47 @@ void ofApp::setup() {
 	settings.numInputChannels = 0;
 	settings.bufferSize = 256;
 	soundStream.setup(settings);
+
+	// - visualizer stores one buffer for drawing
+	// - lastAudioBuffer mirrors the audio thread output for the main thread
+	lastBufferSize = settings.bufferSize;
+	lastNumChannels = settings.numOutputChannels;
+	visualizer.setup(lastBufferSize, lastNumChannels);
+	lastAudioBuffer.assign(lastBufferSize * lastNumChannels, 0.0f);
 }
 
 //--------------------------------------------------------------
 void ofApp::update() {
+	// - choose voice color so the waveform matches the active voice
+	// - sine teal, square amber, noise grey
+	ofColor col = ofColor(80, 220, 180);
+	if (activeVoice == &squareVoice) col = ofColor(255, 180, 60);
+	else if (activeVoice == &noiseVoice) col = ofColor(180, 180, 180);
+	visualizer.setVoiceColor(col);
+
+	// - scale waveform amplitude with velocity so louder notes look larger
+	// - keep a minimum visible size when no note is held
+	float scale = noteHeld ? (currentVelocity * 1.4f + 0.3f) : 0.5f;
+	visualizer.setAmplitudeScale(scale);
+
+	// - pass the latest audio buffer to the visualizer for drawing
+	// - copy under lock to avoid tearing between audio and main threads
+	std::vector<float> copy;
+	{
+		std::lock_guard<std::mutex> lock(audioMutex);
+		copy = lastAudioBuffer;
+	}
+	visualizer.update(copy);
 }
 
 //--------------------------------------------------------------
 void ofApp::draw() {
 	// Current voice and key hints
 	ofBackground(30);
+
+	// - draw the waveform behind the text overlay
+	visualizer.draw();
+
 	ofSetColor(255);
 
 	std::string voiceName = "Sine";
@@ -60,6 +91,15 @@ void ofApp::audioOut(ofSoundBuffer& buffer) {
 	if (activeVoice) {
 		activeVoice->render(out.data(), buffer.getNumFrames(), buffer.getNumChannels());
 	}
+
+	// - copy the rendered buffer for the visualizer
+	// - keep the copy under lock so update() sees a consistent snapshot
+	{
+		std::lock_guard<std::mutex> lock(audioMutex);
+		lastAudioBuffer = out;
+		lastBufferSize = buffer.getNumFrames();
+		lastNumChannels = buffer.getNumChannels();
+	}
 }
 
 //--------------------------------------------------------------
@@ -82,7 +122,7 @@ void ofApp::keyPressed(int key) {
 			}
 			activeVoice = nextVoice;
 			if (wasHeld) {
-				activeVoice->noteOn(heldFreq, 0.5f);
+				activeVoice->noteOn(heldFreq, currentVelocity);
 			}
 		}
 		return;
@@ -101,8 +141,9 @@ void ofApp::keyPressed(int key) {
 		default: return;
 	}
 
+	currentVelocity = 0.5f;
 	if (activeVoice) {
-		activeVoice->noteOn(currentFreq, 0.5f);
+		activeVoice->noteOn(currentFreq, currentVelocity);
 	}
 	noteHeld = true;
 }
