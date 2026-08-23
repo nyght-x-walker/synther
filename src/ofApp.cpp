@@ -3,8 +3,13 @@
 //--------------------------------------------------------------
 void ofApp::setup() {
 	// 44.1 kHz, stereo output, no input, 256-sample buffer.
+	// - all voices share the same sample rate
+	// - sine is the default voice
 	sampleRate = 44100;
-	voice.setSampleRate(sampleRate);
+	sineVoice.setSampleRate(sampleRate);
+	squareVoice.setSampleRate(sampleRate);
+	noiseVoice.setSampleRate(sampleRate);
+	activeVoice = &sineVoice;
 
 	ofSoundStreamSettings settings;
 	settings.setOutListener(this);
@@ -21,16 +26,22 @@ void ofApp::update() {
 
 //--------------------------------------------------------------
 void ofApp::draw() {
-	// On-screen instructions and current note state
+	// Current voice and key hints
 	ofBackground(30);
 	ofSetColor(255);
-	ofDrawBitmapString("Synther - SineVoice", 20, 30);
-	ofDrawBitmapString("Hold A S D F G H J K L to play C4 to D5", 20, 50);
+
+	std::string voiceName = "Sine";
+	if (activeVoice == &squareVoice) voiceName = "Square";
+	else if (activeVoice == &noiseVoice) voiceName = "Noise";
+
+	ofDrawBitmapString("Synther - " + voiceName + " Voice", 20, 30);
+	ofDrawBitmapString("Keys 1: Sine  2: Square  3: Noise", 20, 50);
+	ofDrawBitmapString("Hold A S D F G H J K L to play C4 to D5", 20, 70);
 
 	if (noteHeld) {
-		ofDrawBitmapString("Now playing: " + ofToString(currentFreq, 2) + " Hz", 20, 70);
+		ofDrawBitmapString("Now playing: " + ofToString(currentFreq, 2) + " Hz (" + voiceName + ")", 20, 90);
 	} else {
-		ofDrawBitmapString("No note held", 20, 70);
+		ofDrawBitmapString("No note held", 20, 90);
 	}
 }
 
@@ -41,13 +52,42 @@ void ofApp::exit() {
 
 //--------------------------------------------------------------
 void ofApp::audioOut(ofSoundBuffer& buffer) {
-	// Render one mono sample per frame, copied to all channels.
-	voice.render(buffer.getBuffer().data(), buffer.getNumFrames(), buffer.getNumChannels());
+	// Clear buffer to silence, then render the active voice.
+	// - mixing later can sum multiple voices into the same buffer
+	auto& out = buffer.getBuffer();
+	std::fill(out.begin(), out.end(), 0.0f);
+
+	if (activeVoice) {
+		activeVoice->render(out.data(), buffer.getNumFrames(), buffer.getNumChannels());
+	}
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
-	// A key sounds while held. Fixed velocity.
+	// Voice selection and note triggering
+	// - 1/2/3 switch the active voice
+	// - A-L play notes on the active voice
+	if (key == '1' || key == '2' || key == '3') {
+		SoundSource* nextVoice = nullptr;
+		if (key == '1') nextVoice = &sineVoice;
+		else if (key == '2') nextVoice = &squareVoice;
+		else if (key == '3') nextVoice = &noiseVoice;
+
+		if (nextVoice != activeVoice) {
+			// Retrigger the held note on the new voice so the switch is audible
+			bool wasHeld = noteHeld;
+			float heldFreq = currentFreq;
+			if (wasHeld && activeVoice) {
+				activeVoice->noteOff();
+			}
+			activeVoice = nextVoice;
+			if (wasHeld) {
+				activeVoice->noteOn(heldFreq, 0.5f);
+			}
+		}
+		return;
+	}
+
 	switch (key) {
 		case 'a': currentFreq = 261.63f; break; // C4
 		case 's': currentFreq = 293.66f; break; // D4
@@ -61,13 +101,15 @@ void ofApp::keyPressed(int key) {
 		default: return;
 	}
 
-	voice.noteOn(currentFreq, 0.5f);
+	if (activeVoice) {
+		activeVoice->noteOn(currentFreq, 0.5f);
+	}
 	noteHeld = true;
 }
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key) {
-	// Stop the note when any mapped key is released.
+	// Stop the note when any mapped key is released
 	switch (key) {
 		case 'a':
 		case 's':
@@ -78,7 +120,9 @@ void ofApp::keyReleased(int key) {
 		case 'j':
 		case 'k':
 		case 'l':
-			voice.noteOff();
+			if (activeVoice) {
+				activeVoice->noteOff();
+			}
 			noteHeld = false;
 			break;
 		default: break;

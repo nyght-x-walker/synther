@@ -2,6 +2,8 @@
 
 #include "ofMain.h"
 #include "SineVoice.h"
+#include "SquareVoice.h"
+#include "NoiseVoice.h"
 
 class ofApp : public ofBaseApp{
 
@@ -27,8 +29,14 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg) override;
 
 		// Audio
-		ofSoundStream soundStream; // audio stream to the device
-		SineVoice voice;           // sine oscillator voice
+		// - three voices share the SoundSource interface
+		// - activeVoice points to the selected voice
+		// - future mixing can sum multiple voices into the buffer
+		ofSoundStream soundStream;
+		SineVoice sineVoice;
+		SquareVoice squareVoice;
+		NoiseVoice noiseVoice;
+		SoundSource* activeVoice = nullptr;
 
 		int sampleRate = 44100;    // audio sample rate in Hz
 		bool noteHeld = false;     // true while a mapped key is held down
