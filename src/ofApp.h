@@ -1,6 +1,12 @@
 #pragma once
 
 #include "ofMain.h"
+#include "SineVoice.h"
+#include "SquareVoice.h"
+#include "NoiseVoice.h"
+#include "Visualizer.h"
+#include <mutex>
+#include <vector>
 
 class ofApp : public ofBaseApp{
 
@@ -9,6 +15,8 @@ class ofApp : public ofBaseApp{
 		void update() override;
 		void draw() override;
 		void exit() override;
+
+		void audioOut(ofSoundBuffer& buffer) override;
 
 		void keyPressed(int key) override;
 		void keyReleased(int key) override;
@@ -22,5 +30,38 @@ class ofApp : public ofBaseApp{
 		void windowResized(int w, int h) override;
 		void dragEvent(ofDragInfo dragInfo) override;
 		void gotMessage(ofMessage msg) override;
-		
+
+		// Audio
+		// - three voices share the SoundSource interface
+		// - activeVoice points to the selected voice
+		// - future mixing can sum multiple voices into the buffer
+		ofSoundStream soundStream;
+		SineVoice sineVoice;
+		SquareVoice squareVoice;
+		NoiseVoice noiseVoice;
+		SoundSource* activeVoice = nullptr;
+
+		int sampleRate = 44100;    // audio sample rate in Hz
+		bool noteHeld = false;     // true while a mapped key is held down
+		float currentFreq = 0.0f;  // frequency of the note currently held
+		float currentVelocity = 0.5f; // velocity of the current note 0..1
+
+		bool keyDown[9] = {
+			false, false, false,
+			false, false, false,
+			false, false, false
+		};
+
+		// Mouse control
+		float mousePitchOffset = 0.0f;
+		float mouseVolume = 0.8f;
+
+		// Visualizer
+		// - stores recent audio for drawing
+		// - lastAudioBuffer is shared between audio and main threads
+		Visualizer visualizer;
+		std::vector<float> lastAudioBuffer;
+		int lastBufferSize = 256;
+		int lastNumChannels = 2;
+		std::mutex audioMutex;
 };
