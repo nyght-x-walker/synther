@@ -46,6 +46,12 @@ class ofApp : public ofBaseApp{
 		float currentFreq = 0.0f;  // frequency of the note currently held
 		float currentVelocity = 0.5f; // velocity of the current note 0..1
 
+		bool keyDown[9] = {
+			false, false, false,
+			false, false, false,
+			false, false, false
+		};
+
 		// Mouse control
 		float mousePitchOffset = 0.0f;
 		float mouseVolume = 0.8f;
