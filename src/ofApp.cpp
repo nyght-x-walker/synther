@@ -78,6 +78,81 @@ void ofApp::draw() {
 	}
 
 	ofDrawBitmapString("Tip: top = loud, bottom = quiet, left = -20 Hz, right = +20 Hz", 20, 130);
+
+
+	// - keyboard labels match the mapped A-L note keys
+	// - each key stores its base note and frequency for display
+	char keys[9] = {
+		'A', 'S', 'D', 'F', 'G',
+		'H', 'J', 'K', 'L'
+	};
+
+	std::string notes[9] = {
+		"C4", "D4", "E4", "F4", "G4",
+		"A4", "B4", "C5", "D5"
+	};
+
+	float frequencies[9] = {
+		261.63f, 293.66f, 329.63f,
+		349.23f, 392.00f, 440.00f,
+		493.88f, 523.25f, 587.33f
+	};
+
+
+	// - draw nine connected rectangular keys near the bottom of the window
+	// - center the complete keyboard horizontally
+	int keyWidth = 90;
+	int keyHeight = 180;
+	int totalWidth = 9 * keyWidth;
+
+	int startX = (ofGetWidth() - totalWidth) / 2;
+	int startY = ofGetHeight() - keyHeight - 100;
+
+
+	for (int i = 0; i < 9; i++) {
+		int x = startX + i * keyWidth;
+
+		// - held keys become black
+		// - inactive keys use evenly spaced bright colors
+		if (keyDown[i]) {
+			ofSetColor(0);
+		} else {
+			float hue = i * (255.0f / 9.0f);
+			ofSetColor(ofColor::fromHsb(hue, 210, 255));
+		}
+
+		ofDrawRectangle(x, startY, keyWidth, keyHeight);
+
+
+		// - add a white outline to separate adjacent keys
+		ofNoFill();
+		ofSetColor(255);
+		ofSetLineWidth(2);
+		ofDrawRectangle(x, startY, keyWidth, keyHeight);
+		ofFill();
+
+
+		// - show keyboard key, musical note, and base frequency
+		ofSetColor(255);
+
+		ofDrawBitmapString(
+			std::string(1, keys[i]),
+			x + 40,
+			startY + 40
+		);
+
+		ofDrawBitmapString(
+			notes[i],
+			x + 35,
+			startY + 90
+		);
+
+		ofDrawBitmapString(
+			ofToString(frequencies[i], 2) + " Hz",
+			x + 12,
+			startY + 140
+		);
+	}
 }
 
 //--------------------------------------------------------------
@@ -133,16 +208,53 @@ void ofApp::keyPressed(int key) {
 	}
 
 	switch (key) {
-		case 'a': currentFreq = 261.63f; break; // C4
-		case 's': currentFreq = 293.66f; break; // D4
-		case 'd': currentFreq = 329.63f; break; // E4
-		case 'f': currentFreq = 349.23f; break; // F4
-		case 'g': currentFreq = 392.00f; break; // G4
-		case 'h': currentFreq = 440.00f; break; // A4
-		case 'j': currentFreq = 493.88f; break; // B4
-		case 'k': currentFreq = 523.25f; break; // C5
-		case 'l': currentFreq = 587.33f; break; // D5
-		default: return;
+		case 'a':
+			currentFreq = 261.63f;
+			keyDown[0] = true;
+			break;
+
+		case 's':
+			currentFreq = 293.66f;
+			keyDown[1] = true;
+			break;
+
+		case 'd':
+			currentFreq = 329.63f;
+			keyDown[2] = true;
+			break;
+
+		case 'f':
+			currentFreq = 349.23f;
+			keyDown[3] = true;
+			break;
+
+		case 'g':
+			currentFreq = 392.00f;
+			keyDown[4] = true;
+			break;
+
+		case 'h':
+			currentFreq = 440.00f;
+			keyDown[5] = true;
+			break;
+
+		case 'j':
+			currentFreq = 493.88f;
+			keyDown[6] = true;
+			break;
+
+		case 'k':
+			currentFreq = 523.25f;
+			keyDown[7] = true;
+			break;
+
+		case 'l':
+			currentFreq = 587.33f;
+			keyDown[8] = true;
+			break;
+
+		default:
+			return;
 	}
 
 	float baseVelocity = 0.5f;
@@ -161,24 +273,54 @@ void ofApp::keyPressed(int key) {
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key) {
-	// Stop the note when any mapped key is released
-	switch (key) {
-		case 'a':
-		case 's':
-		case 'd':
-		case 'f':
-		case 'g':
-		case 'h':
-		case 'j':
-		case 'k':
-		case 'l':
-			if (activeVoice) {
-				activeVoice->noteOff();
-			}
-			noteHeld = false;
-			break;
-		default: break;
-	}
+
+    switch (key) {
+
+        case 'a':
+            keyDown[0] = false;
+            break;
+
+        case 's':
+            keyDown[1] = false;
+            break;
+
+        case 'd':
+            keyDown[2] = false;
+            break;
+
+        case 'f':
+            keyDown[3] = false;
+            break;
+
+        case 'g':
+            keyDown[4] = false;
+            break;
+
+        case 'h':
+            keyDown[5] = false;
+            break;
+
+        case 'j':
+            keyDown[6] = false;
+            break;
+
+        case 'k':
+            keyDown[7] = false;
+            break;
+
+        case 'l':
+            keyDown[8] = false;
+            break;
+
+        default:
+            return;
+    }
+
+    if (activeVoice) {
+        activeVoice->noteOff();
+    }
+
+    noteHeld = false;
 }
 
 //--------------------------------------------------------------
