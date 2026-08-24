@@ -1,4 +1,5 @@
 #include "ofApp.h"
+#include <algorithm>
 
 //--------------------------------------------------------------
 void ofApp::setup() {
@@ -65,15 +66,18 @@ void ofApp::draw() {
 	if (activeVoice == &squareVoice) voiceName = "Square";
 	else if (activeVoice == &noiseVoice) voiceName = "Noise";
 
-	ofDrawBitmapString("Synther - " + voiceName + " Voice", 20, 30);
+	ofDrawBitmapString("Synther - " + voiceName + " Voice  [Capricorn]", 20, 30);
 	ofDrawBitmapString("Keys 1: Sine  2: Square  3: Noise", 20, 50);
 	ofDrawBitmapString("Hold A S D F G H J K L to play C4 to D5", 20, 70);
+	ofDrawBitmapString("Mouse X: pitch offset " + ofToString(mousePitchOffset, 1) + " Hz  Y: volume " + ofToString(mouseVolume, 2), 20, 90);
 
 	if (noteHeld) {
-		ofDrawBitmapString("Now playing: " + ofToString(currentFreq, 2) + " Hz (" + voiceName + ")", 20, 90);
+		ofDrawBitmapString("Now playing: " + ofToString(currentFreq, 2) + " Hz (" + voiceName + ") vol " + ofToString(currentVelocity, 2), 20, 110);
 	} else {
-		ofDrawBitmapString("No note held", 20, 90);
+		ofDrawBitmapString("No note held - move mouse to adjust pitch/volume for next note", 20, 110);
 	}
+
+	ofDrawBitmapString("Tip: top = loud, bottom = quiet, left = -20 Hz, right = +20 Hz", 20, 130);
 }
 
 //--------------------------------------------------------------
@@ -141,7 +145,14 @@ void ofApp::keyPressed(int key) {
 		default: return;
 	}
 
-	currentVelocity = 0.5f;
+	float baseVelocity = 0.5f;
+	float finalFreq = currentFreq + mousePitchOffset;
+	float finalVelocity = baseVelocity * mouseVolume;
+	finalFreq = std::max(20.0f, finalFreq);
+	finalVelocity = ofClamp(finalVelocity, 0.0f, 1.0f);
+
+	currentFreq = finalFreq;
+	currentVelocity = finalVelocity;
 	if (activeVoice) {
 		activeVoice->noteOn(currentFreq, currentVelocity);
 	}
@@ -172,10 +183,14 @@ void ofApp::keyReleased(int key) {
 
 //--------------------------------------------------------------
 void ofApp::mouseMoved(int x, int y) {
+	mousePitchOffset = ofMap(x, 0, ofGetWidth(), -20.0f, 20.0f, true);
+	mouseVolume = ofMap(y, 0, ofGetHeight(), 1.0f, 0.0f, true);
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button) {
+	mousePitchOffset = ofMap(x, 0, ofGetWidth(), -20.0f, 20.0f, true);
+	mouseVolume = ofMap(y, 0, ofGetHeight(), 1.0f, 0.0f, true);
 }
 
 //--------------------------------------------------------------

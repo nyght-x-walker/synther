@@ -46,6 +46,10 @@ class ofApp : public ofBaseApp{
 		float currentFreq = 0.0f;  // frequency of the note currently held
 		float currentVelocity = 0.5f; // velocity of the current note 0..1
 
+		// Mouse control
+		float mousePitchOffset = 0.0f;
+		float mouseVolume = 0.8f;
+
 		// Visualizer
 		// - stores recent audio for drawing
 		// - lastAudioBuffer is shared between audio and main threads
