@@ -14,6 +14,8 @@ public:
 	void render(float* output, int bufferSize, int nChannels) override;
 
 private:
-	float phase = 0.0f;          // current phase in radians
-	float sampleRate = 44100.0f; // sample rate in Hz
+	float phase = 0.0f;
+	float lfoPhase = 0.0f;
+	float filterState = 0.0f;
+	float sampleRate = 44100.0f;
 };

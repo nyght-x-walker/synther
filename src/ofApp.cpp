@@ -36,12 +36,17 @@ void ofApp::setup() {
 	settings.bufferSize = 256;
 	soundStream.setup(settings);
 
-	// visualizer stores one buffer for drawing
-	// lastAudioBuffer mirrors the audio thread output for the main thread
 	lastBufferSize = settings.bufferSize;
 	lastNumChannels = settings.numOutputChannels;
 	visualizer.setup(lastBufferSize, lastNumChannels);
 	lastAudioBuffer.assign(lastBufferSize * lastNumChannels, 0.0f);
+
+	ofSetWindowTitle("Synther - Capricorn");
+	delayLine.assign(8192, 0.0f);
+	delayPos = 0;
+	presets = { {"Warm", 0, 0.0f, 0.8f}, {"Bright", 1, 5.0f, 0.9f}, {"Noisy", 2, -3.0f, 0.7f}, {"Deep", 0, -7.0f, 0.85f} };
+	particles.assign(18, {0, 0, 0, 0, 0});
+	octave = 0;
 }
 
 //--------------------------------------------------------------
@@ -49,6 +54,8 @@ void ofApp::update() {
 	ofColor col = ofColor(80, 220, 180);
 	if (activeVoice == &squareVoice) col = ofColor(255, 180, 60);
 	else if (activeVoice == &noiseVoice) col = ofColor(180, 180, 180);
+	float hueShift = ofMap(mouseX, 0, static_cast<float>(ofGetWidth()), -12.0f, 12.0f, true);
+	col.setHue(static_cast<int>(fmod(col.getHue() + hueShift + 255, 255)));
 	visualizer.setVoiceColor(col);
 
 	float scale = noteHeld ? (currentVelocity * 1.4f + 0.3f) : 0.5f;
@@ -60,6 +67,23 @@ void ofApp::update() {
 		copy = lastAudioBuffer;
 	}
 	visualizer.update(copy);
+
+	if (activeVoice == &noiseVoice && noteHeld) {
+		for (auto &p : particles) {
+			p.x += p.vx;
+			p.y += p.vy;
+			p.life -= 0.03f;
+			if (p.life <= 0.0f) {
+				p.x = static_cast<float>(ofGetWidth()) * 0.5f;
+				p.y = static_cast<float>(ofGetHeight()) * 0.5f;
+				float a = ofRandom(0, TWO_PI);
+				float s = ofRandom(1.0f, 4.0f);
+				p.vx = std::cos(a) * s;
+				p.vy = std::sin(a) * s;
+				p.life = 1.0f;
+			}
+		}
+	}
 
 	for (int i = 0; i < 9; i++) {
 		if (keyGlow[i] > 0.0f) {
@@ -73,6 +97,13 @@ void ofApp::update() {
 void ofApp::draw() {
 	ofBackgroundGradient(ofColor(48, 38, 62), ofColor(20, 20, 26), OF_GRADIENT_BAR);
 	visualizer.draw();
+
+	if (activeVoice == &noiseVoice && noteHeld) {
+		for (auto &p : particles) {
+			ofSetColor(180, 180, 180, static_cast<int>(p.life * 120));
+			ofDrawCircle(p.x, p.y, 2.5f);
+		}
+	}
 
 	ofEnableAlphaBlending();
 	ofSetColor(255, 255, 255, 18);
@@ -143,6 +174,21 @@ void ofApp::draw() {
 		ofDrawBitmapString(ofToString(frequencies[i], 2) + " Hz", x + 12, startY + 140);
 	}
 
+	float presetY = startY - 38;
+	float presetW = 70;
+	float presetH = 18;
+	float presetX = (static_cast<float>(ofGetWidth()) - 4 * presetW - 30) * 0.5f;
+	for (int i = 0; i < 4; i++) {
+		bool sel = (currentPreset == i);
+		ofColor c = (presets[i].voice == 0 ? ofColor(80, 220, 180) : presets[i].voice == 1 ? ofColor(255, 180, 60) : ofColor(180, 180, 180));
+		ofSetColor(c, sel ? 210 : 85);
+		ofDrawRectRounded(presetX + i * (presetW + 10), presetY, presetW, presetH, 4);
+		ofSetColor(255, sel ? 255 : 160);
+		ofDrawBitmapString(presets[i].name, presetX + i * (presetW + 10) + 8, presetY + 13);
+	}
+	ofSetColor(255, 255, 255, 90);
+	ofDrawBitmapString("Presets: 4 Warm  5 Bright  6 Noisy  7 Deep  |  Z/X Octave " + ofToString(octave), presetX, presetY - 12);
+
 	std::string voiceName = "Sine";
 	if (activeVoice == &squareVoice) voiceName = "Square";
 	else if (activeVoice == &noiseVoice) voiceName = "Noise";
@@ -194,8 +240,6 @@ void ofApp::exit() {
 
 //--------------------------------------------------------------
 void ofApp::audioOut(ofSoundBuffer& buffer) {
-	// Clear buffer to silence, then render the active voice.
-	// mixing later can sum multiple voices into the same buffer
 	auto& out = buffer.getBuffer();
 	std::fill(out.begin(), out.end(), 0.0f);
 
@@ -203,8 +247,21 @@ void ofApp::audioOut(ofSoundBuffer& buffer) {
 		activeVoice->render(out.data(), buffer.getNumFrames(), buffer.getNumChannels());
 	}
 
-	// copy the rendered buffer for the visualizer
-	// keep the copy under lock so update() sees a consistent snapshot
+	if (!delayLine.empty()) {
+		int frames = buffer.getNumFrames();
+		int nChannels = buffer.getNumChannels();
+		for (int i = 0; i < frames; i++) {
+			for (int c = 0; c < nChannels; c++) {
+				int idx = i * nChannels + c;
+				float dry = out[idx];
+				float delayed = delayLine[delayPos];
+				float wet = dry * 0.8f + delayed * 0.28f;
+				delayLine[delayPos] = dry * 0.35f + delayed * 0.55f;
+				out[idx] = wet;
+			}
+			delayPos = (delayPos + 1) % static_cast<int>(delayLine.size());
+		}
+	}
 	{
 		std::lock_guard<std::mutex> lock(audioMutex);
 		lastAudioBuffer = out;
@@ -215,9 +272,30 @@ void ofApp::audioOut(ofSoundBuffer& buffer) {
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
-	// Voice selection and note triggering
-	// 1/2/3 switch the active voice
-	// A-L play notes on the active voice
+	if (key == 'z' || key == 'Z') {
+		octave = std::max(-1, octave - 1);
+		return;
+	}
+	if (key == 'x' || key == 'X') {
+		octave = std::min(2, octave + 1);
+		return;
+	}
+	if (key >= '4' && key <= '7') {
+		int idx = key - '4';
+		if (idx >= 0 && idx < static_cast<int>(presets.size())) {
+			Preset &p = presets[idx];
+			currentPreset = idx;
+			if (p.voice == 0) activeVoice = &sineVoice;
+			else if (p.voice == 1) activeVoice = &squareVoice;
+			else if (p.voice == 2) activeVoice = &noiseVoice;
+			mousePitchOffset = p.pitch;
+			mouseVolume = p.vol;
+			if (noteHeld && activeVoice) {
+				activeVoice->noteOn(currentFreq, currentVelocity);
+			}
+			return;
+		}
+	}
 	if (key == '1' || key == '2' || key == '3') {
 		SoundSource* nextVoice = nullptr;
 		if (key == '1') nextVoice = &sineVoice;
@@ -290,8 +368,8 @@ void ofApp::keyPressed(int key) {
 	}
 
 	float baseVelocity = 0.5f;
-	float finalFreq = currentFreq + mousePitchOffset;
-	float finalVelocity = baseVelocity * mouseVolume;
+	float finalFreq = (currentFreq * std::pow(2.0f, static_cast<float>(octave))) + mousePitchOffset;
+	float finalVelocity = baseVelocity * std::pow(mouseVolume, 1.5f);
 	finalFreq = std::max(20.0f, finalFreq);
 	finalVelocity = ofClamp(finalVelocity, 0.0f, 1.0f);
 
