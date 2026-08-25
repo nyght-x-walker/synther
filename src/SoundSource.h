@@ -1,7 +1,5 @@
 #pragma once
-
-// Abstract base class for audio voices. Defines the common
-// note/rendering interface and the state shared by all voices.
+#include "Envelope.h"
 
 class SoundSource {
 public:
@@ -20,7 +18,8 @@ public:
 	bool isActive() const;
 
 protected:
-	bool active = false;     // voice sounds while this is true
-	float frequency = 0.0f;  // note frequency in Hz
-	float velocity = 0.0f;   // note velocity in 0..1
+	bool active = false;
+	float frequency = 0.0f;
+	float velocity = 0.0f;
+	Envelope envelope;
 };

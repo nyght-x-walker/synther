@@ -4,30 +4,30 @@
 #include <vector>
 
 // Visualizer: stores recent audio and draws enhanced views.
-// - audio data is stored as mono samples for drawing
-// - update() copies the latest buffer and computes levels and spectrum
-// - draw() shows waveform, amplitude bar, and spectrum
-// - color and amplitude scale follow the active voice
+// audio data is stored as mono samples for drawing
+// update() copies the latest buffer and computes levels and spectrum
+// draw() shows waveform, amplitude bar, and spectrum
+// color and amplitude scale follow the active voice
 
 class Visualizer {
 public:
-	// - allocate internal storage for the expected buffer size
-	// - nChannels is kept to handle interleaved input
+	// allocate internal storage for the expected buffer size
+	// nChannels is kept to handle interleaved input
 	void setup(int bufferSize, int nChannels);
 
-	// - copy the latest audio buffer for drawing
-	// - expects interleaved data (bufferSize * nChannels)
+	// copy the latest audio buffer for drawing
+	// expects interleaved data (bufferSize * nChannels)
 	void update(const std::vector<float>& audioBuffer);
 
-	// - draw waveform, amplitude bar, and spectrum
-	// - waveform uses voiceColor and amplitudeScale
-	// - map sample values (-1..1) to vertical screen coordinates
+	// draw waveform, amplitude bar, and spectrum
+	// waveform uses voiceColor and amplitudeScale
+	// map sample values (-1..1) to vertical screen coordinates
 	void draw();
 
-	// - set the color used for the waveform and spectrum
+	// set the color used for the waveform and spectrum
 	void setVoiceColor(ofColor color);
 
-	// - set the scale for waveform amplitude (1.0 is normal)
+	// set the scale for waveform amplitude (1.0 is normal)
 	void setAmplitudeScale(float scale);
 
 private:
