@@ -58,6 +58,17 @@ class ofApp : public ofBaseApp{
 		float mouseVolume = 0.8f;
 		float mouseX = 0.0f;
 		float mouseY = 0.0f;
+		int octave = 0;
+
+		std::vector<float> delayLine;
+		int delayPos = 0;
+
+		struct Preset { std::string name; int voice; float pitch; float vol; };
+		std::vector<Preset> presets;
+		int currentPreset = -1;
+
+		struct Particle { float x; float y; float vx; float vy; float life; };
+		std::vector<Particle> particles;
 
 		// Visualizer
 		// stores recent audio for drawing
