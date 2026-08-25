@@ -1,5 +1,21 @@
 #include "ofApp.h"
 #include <algorithm>
+#include <cmath>
+
+static std::string freqToNote(float freq) {
+    if (freq <= 0.0f) return "-";
+    const std::string names[12] = {"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};
+    float n = 12.0f * std::log2(freq / 440.0f) + 9.0f;
+    int note = static_cast<int>(std::round(n));
+    int octave = static_cast<int>(std::floor(note / 12.0f)) + 4;
+    int idx = ((note % 12) + 12) % 12;
+    float cents = (n - note) * 100.0f;
+    std::string s = names[idx] + ofToString(octave);
+    if (std::abs(cents) > 1.0f) {
+        s += (cents > 0 ? " +" : " ") + ofToString(cents, 0) + "c";
+    }
+    return s;
+}
 
 //--------------------------------------------------------------
 void ofApp::setup() {
@@ -82,11 +98,14 @@ void ofApp::draw() {
 		493.88f, 523.25f, 587.33f
 	};
 
-	int keyWidth = 90;
-	int keyHeight = 180;
+	float availableW = static_cast<float>(ofGetWidth()) - 40.0f;
+	int keyWidth = static_cast<int>(availableW / 9.0f);
+	keyWidth = ofClamp(keyWidth, 56, 110);
+	int keyHeight = static_cast<int>(keyWidth * 1.9f);
+	keyHeight = ofClamp(keyHeight, 110, 210);
 	int totalWidth = 9 * keyWidth;
 	int startX = (ofGetWidth() - totalWidth) / 2;
-	int startY = ofGetHeight() - keyHeight - 100;
+	int startY = ofGetHeight() - keyHeight - 80;
 
 	for (int i = 0; i < 9; i++) {
 		int x = startX + i * keyWidth;
@@ -159,7 +178,8 @@ void ofApp::draw() {
 	ofDrawBitmapString("Hold A S D F G H J K L to play C4 to D5", 20, 78);
 	ofDrawBitmapString("Mouse X: pitch offset " + ofToString(mousePitchOffset, 1) + " Hz  Y: volume " + ofToString(mouseVolume, 2), 20, 98);
 	if (noteHeld) {
-		ofDrawBitmapString("Now playing: " + ofToString(currentFreq, 2) + " Hz (" + voiceName + ") vol " + ofToString(currentVelocity, 2), 20, 118);
+		std::string noteName = freqToNote(currentFreq);
+		ofDrawBitmapString("Now playing: " + noteName + " " + ofToString(currentFreq, 1) + " Hz (" + voiceName + ") vol " + ofToString(currentVelocity, 2), 20, 118);
 	} else {
 		ofDrawBitmapString("No note held - move mouse to adjust pitch/volume for next note", 20, 118);
 	}

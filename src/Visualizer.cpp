@@ -74,8 +74,8 @@ void Visualizer::update(const std::vector<float>& audioBuffer) {
 			imag -= waveform[n] * std::sin(angle);
 		}
 		float mag = std::sqrt(real * real + imag * imag) / static_cast<float>(bufferSize);
-		// boost for visibility, clamp to 0..1
-		spectrum[k] = ofClamp(mag * 4.0f, 0.0f, 1.0f);
+		float target = ofClamp(mag * 4.0f, 0.0f, 1.0f);
+		spectrum[k] = spectrum[k] * 0.65f + target * 0.35f;
 	}
 }
 
@@ -110,47 +110,43 @@ void Visualizer::draw() {
 	ofSetLineWidth(1.0f);
 	ofDrawLine(0, centerY, width, centerY);
 
-	// amplitude bar on the right edge
-	// RMS fills the bar, peak is a short tick
-	float barW = 16.0f;
-	float barH = height * 0.34f;
+	float barW = 14.0f;
+	float barH = height * 0.36f;
 	float barX = width - barW - 18.0f;
 	float barY = centerY - barH * 0.5f;
-	ofSetColor(255, 255, 255, 30);
-	ofDrawRectangle(barX, barY, barW, barH);
-	ofSetColor(voiceColor, 200);
+	ofSetColor(255, 255, 255, 28);
+	ofDrawRectRounded(barX, barY, barW, barH, 4);
+	ofSetColor(voiceColor, 190);
 	float rmsH = rmsLevel * barH;
 	float peakH = peakLevel * barH;
-	// RMS as filled portion from the bottom
-	ofDrawRectangle(barX, barY + barH - rmsH, barW, rmsH);
-	// peak as a white tick
+	ofDrawRectRounded(barX, barY + barH - rmsH, barW, rmsH, 4);
+	ofSetColor(255, 255, 255, 45);
+	for (int t = 1; t < 4; t++) {
+		float y = barY + barH * (t / 4.0f);
+		ofDrawLine(barX, y, barX + barW, y);
+	}
 	ofSetColor(255, 255, 255, 220);
 	float peakY = barY + barH - peakH;
-	ofDrawRectangle(barX - 2, peakY - 1, barW + 4, 2);
+	ofDrawRectangle(barX - 3, peakY - 1, barW + 6, 2);
 
-	// spectrum at the bottom
-	// draw a compact bar view, decimated if many bins
 	if (!spectrum.empty()) {
 		float specY = height - 28.0f;
-		float specH = 56.0f;
+		float specH = 58.0f;
 		int bins = std::min(64, static_cast<int>(spectrum.size()));
 		float barStep = (width - 40.0f) / static_cast<float>(bins);
-		float barWidth = barStep * 0.75f;
-
+		float barWidth = barStep * 0.72f;
 		for (int i = 0; i < bins; i++) {
-			// map bin index to spectrum index to cover full range
-			int idx = static_cast<int>(static_cast<float>(i) / bins * spectrum.size());
+			float t = static_cast<float>(i) / bins;
+			float logT = std::pow(t, 1.6f);
+			int idx = static_cast<int>(logT * (spectrum.size() - 1));
+			idx = ofClamp(idx, 0, static_cast<int>(spectrum.size()) - 1);
 			float mag = spectrum[idx];
 			float h = mag * specH;
 			float x = 20.0f + i * barStep;
 			float y = specY - h;
-
-			// use voice color with alpha scaled by magnitude
-			ofSetColor(voiceColor, 90 + static_cast<int>(mag * 120));
-			ofDrawRectangle(x, y, barWidth, h);
+			ofSetColor(voiceColor, 85 + static_cast<int>(mag * 130));
+			ofDrawRectRounded(x, y, barWidth, h, 2);
 		}
-
-		// baseline for spectrum
 		ofSetColor(255, 255, 255, 25);
 		ofDrawLine(20, specY, width - 20, specY);
 	}
