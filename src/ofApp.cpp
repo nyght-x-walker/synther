@@ -54,7 +54,7 @@ void ofApp::update() {
 	ofColor col = ofColor(80, 220, 180);
 	if (activeVoice == &squareVoice) col = ofColor(255, 180, 60);
 	else if (activeVoice == &noiseVoice) col = ofColor(180, 180, 180);
-	float hueShift = ofMap(mouseX, 0, static_cast<float>(ofGetWidth()), -12.0f, 12.0f, true);
+	float hueShift = ofMap(mouseX, 0, static_cast<float>(ofGetWidth()), -5.0f, 5.0f, true);
 	col.setHue(static_cast<int>(fmod(col.getHue() + hueShift + 255, 255)));
 	visualizer.setVoiceColor(col);
 
@@ -138,34 +138,52 @@ void ofApp::draw() {
 	int startX = (ofGetWidth() - totalWidth) / 2;
 	int startY = ofGetHeight() - keyHeight - 80;
 
+	if (octave != 0) {
+		ofSetColor(80, 220, 180, std::abs(octave) * 12 + 10);
+		ofDrawRectRounded(startX - 8, startY - 18, totalWidth + 16, keyHeight + 36, 12);
+	}
+
+	int pitchClass[9] = {0, 2, 4, 5, 7, 9, 11, 0, 2};
 	for (int i = 0; i < 9; i++) {
 		int x = startX + i * keyWidth;
 		float glow = keyGlow[i];
-		ofColor base = ofColor::fromHsb(i * (255.0f / 9.0f), 210, 255);
+		float hue = pitchClass[i] * (255.0f / 12.0f);
+		ofColor base = ofColor::fromHsb(hue, 170, 230);
 		ofColor col = base;
+		ofColor voiceCol = ofColor(80, 220, 180);
+		if (activeVoice == &squareVoice) voiceCol = ofColor(255, 180, 60);
+		else if (activeVoice == &noiseVoice) voiceCol = ofColor(180, 180, 180);
 		if (keyDown[i]) {
-			col = ofColor(12, 12, 14);
-			if (glow > 0.0f) {
-				col = col.lerp(ofColor(80, 220, 180), glow * 0.6f);
+			col = voiceCol;
+			if (glow < 0.7f) {
+				col = voiceCol.lerp(ofColor(12, 12, 14), 0.15f);
 			}
 		} else if (glow > 0.0f) {
-			col = base.lerp(ofColor(255), glow * 0.5f);
+			col = base.lerp(ofColor(255), glow * 0.45f);
 		}
 		ofSetColor(col);
 		ofDrawRectRounded(x, startY, keyWidth, keyHeight, 10);
 
 		ofNoFill();
-		ofSetColor(255, 255, 255, keyDown[i] ? 90 : 22);
-		if (glow > 0.0f) {
-			ofSetColor(80, 220, 180, static_cast<int>(glow * 120));
+		if (keyDown[i]) {
+			ofSetColor(255, 255, 255, 140);
+		} else if (glow > 0.0f) {
+			ofSetColor(80, 220, 180, static_cast<int>(glow * 110));
+		} else {
+			ofSetColor(255, 255, 255, 22);
 		}
-		ofSetLineWidth(keyDown[i] ? 2.5f : 1.2f);
+		ofSetLineWidth(keyDown[i] ? 2.8f : 1.2f);
 		ofDrawRectRounded(x, startY, keyWidth, keyHeight, 10);
 		ofFill();
 
 		if (glow > 0.0f) {
-			ofSetColor(80, 220, 180, static_cast<int>(glow * 55));
+			ofSetColor(80, 220, 180, static_cast<int>(glow * 50));
 			ofDrawRectRounded(x - 2, startY - 2, keyWidth + 4, keyHeight + 4, 12);
+		}
+
+		if (keyDown[i]) {
+			ofSetColor(255, 255, 255, 210);
+			ofDrawCircle(x + keyWidth * 0.5f, startY + 18, 4);
 		}
 
 		ofSetColor(255);
