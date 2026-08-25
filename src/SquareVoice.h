@@ -3,7 +3,7 @@
 #include "SoundSource.h"
 
 // Square voice: square wave from the sign of the phase.
-// - High for the first half cycle, low for the second.
+// High for the first half cycle, low for the second.
 
 class SquareVoice : public SoundSource {
 public:

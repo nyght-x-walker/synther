@@ -3,7 +3,7 @@
 #include "SoundSource.h"
 
 // Noise voice: white noise.
-// - Random sample per frame, uniform in -1..1.
+// Random sample per frame, uniform in -1..1.
 
 class NoiseVoice : public SoundSource {
 public:
@@ -14,5 +14,6 @@ public:
 	void render(float* output, int bufferSize, int nChannels) override;
 
 private:
-	float sampleRate = 44100.0f; // kept for symmetry with other voices
+	float sampleRate = 44100.0f;
+	float filterState = 0.0f;
 };

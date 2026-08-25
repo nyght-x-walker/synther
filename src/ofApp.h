@@ -32,9 +32,9 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg) override;
 
 		// Audio
-		// - three voices share the SoundSource interface
-		// - activeVoice points to the selected voice
-		// - future mixing can sum multiple voices into the buffer
+		// three voices share the SoundSource interface
+		// activeVoice points to the selected voice
+		// future mixing can sum multiple voices into the buffer
 		ofSoundStream soundStream;
 		SineVoice sineVoice;
 		SquareVoice squareVoice;
@@ -46,13 +46,22 @@ class ofApp : public ofBaseApp{
 		float currentFreq = 0.0f;  // frequency of the note currently held
 		float currentVelocity = 0.5f; // velocity of the current note 0..1
 
+		bool keyDown[9] = {
+			false, false, false,
+			false, false, false,
+			false, false, false
+		};
+		float keyGlow[9] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+
 		// Mouse control
 		float mousePitchOffset = 0.0f;
 		float mouseVolume = 0.8f;
+		float mouseX = 0.0f;
+		float mouseY = 0.0f;
 
 		// Visualizer
-		// - stores recent audio for drawing
-		// - lastAudioBuffer is shared between audio and main threads
+		// stores recent audio for drawing
+		// lastAudioBuffer is shared between audio and main threads
 		Visualizer visualizer;
 		std::vector<float> lastAudioBuffer;
 		int lastBufferSize = 256;

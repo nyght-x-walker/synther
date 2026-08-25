@@ -3,9 +3,9 @@
 #include <algorithm>
 
 void Visualizer::setup(int bufferSize, int nChannels) {
-	// - store dimensions for later mapping
-	// - allocate mono storage, one value per frame
-	// - allocate spectrum with half the buffer size
+	// store dimensions for later mapping
+	// allocate mono storage, one value per frame
+	// allocate spectrum with half the buffer size
 	this->bufferSize = bufferSize;
 	this->nChannels = nChannels;
 	waveform.assign(bufferSize, 0.0f);
@@ -21,14 +21,14 @@ void Visualizer::setVoiceColor(ofColor color) {
 }
 
 void Visualizer::setAmplitudeScale(float scale) {
-	// - clamp to a readable range so quiet notes stay visible
+	// clamp to a readable range so quiet notes stay visible
 	amplitudeScale = ofClamp(scale, 0.25f, 1.8f);
 }
 
 void Visualizer::update(const std::vector<float>& audioBuffer) {
-	// - keep internal waveform in sync with audio thread
-	// - handle interleaved input by taking first channel
-	// - clamp to expected size to avoid visual mismatch
+	// keep internal waveform in sync with audio thread
+	// handle interleaved input by taking first channel
+	// clamp to expected size to avoid visual mismatch
 
 	if (audioBuffer.empty() || bufferSize == 0) {
 		rmsLevel = 0.0f;
@@ -41,16 +41,16 @@ void Visualizer::update(const std::vector<float>& audioBuffer) {
 	frames = std::min(frames, bufferSize);
 
 	for (int i = 0; i < frames; i++) {
-		// - interleaved layout: frame * nChannels + channel
+		// interleaved layout: frame * nChannels + channel
 		waveform[i] = audioBuffer[i * nChannels];
 	}
 
-	// - fill remainder with silence if buffer is short
+	// fill remainder with silence if buffer is short
 	for (int i = frames; i < bufferSize; i++) {
 		waveform[i] = 0.0f;
 	}
 
-	// - compute RMS and peak for the amplitude bar
+	// compute RMS and peak for the amplitude bar
 	float sumSq = 0.0f;
 	float peak = 0.0f;
 	for (int i = 0; i < bufferSize; i++) {
@@ -61,9 +61,9 @@ void Visualizer::update(const std::vector<float>& audioBuffer) {
 	rmsLevel = std::sqrt(sumSq / std::max(1, bufferSize));
 	peakLevel = peak;
 
-	// - compute a lightweight magnitude spectrum for the bottom view
-	// - naive DFT, fast enough for 256 samples at 60 fps
-	// - keep only half the bins, magnitude normalized by buffer size
+	// compute a lightweight magnitude spectrum for the bottom view
+	// naive DFT, fast enough for 256 samples at 60 fps
+	// keep only half the bins, magnitude normalized by buffer size
 	int specSize = static_cast<int>(spectrum.size());
 	for (int k = 0; k < specSize; k++) {
 		float real = 0.0f;
@@ -74,7 +74,7 @@ void Visualizer::update(const std::vector<float>& audioBuffer) {
 			imag -= waveform[n] * std::sin(angle);
 		}
 		float mag = std::sqrt(real * real + imag * imag) / static_cast<float>(bufferSize);
-		// - boost for visibility, clamp to 0..1
+		// boost for visibility, clamp to 0..1
 		spectrum[k] = ofClamp(mag * 4.0f, 0.0f, 1.0f);
 	}
 }
@@ -84,34 +84,34 @@ void Visualizer::draw() {
 		return;
 	}
 
-	// - layout: waveform centered, spectrum at bottom, amplitude bar on right
+	// layout: waveform centered, spectrum at bottom, amplitude bar on right
 	float width = static_cast<float>(ofGetWidth());
 	float height = static_cast<float>(ofGetHeight());
 	float centerY = height * 0.50f;
 	float amplitude = height * 0.22f * amplitudeScale;
 	float xStep = width / static_cast<float>(std::max(1, bufferSize - 1));
 
-	// - waveform with voice-dependent color
+	// waveform with voice-dependent color
 	ofSetColor(voiceColor);
 	ofSetLineWidth(2.0f);
 
-	// - connect consecutive samples with lines for a continuous trace
+	// connect consecutive samples with lines for a continuous trace
 	for (int i = 0; i < bufferSize - 1; i++) {
 		float x1 = i * xStep;
 		float x2 = (i + 1) * xStep;
-		// - invert sample so positive is upward, scale to amplitude
+		// invert sample so positive is upward, scale to amplitude
 		float y1 = centerY - waveform[i] * amplitude;
 		float y2 = centerY - waveform[i + 1] * amplitude;
 		ofDrawLine(x1, y1, x2, y2);
 	}
 
-	// - center line for reference
+	// center line for reference
 	ofSetColor(255, 255, 255, 35);
 	ofSetLineWidth(1.0f);
 	ofDrawLine(0, centerY, width, centerY);
 
-	// - amplitude bar on the right edge
-	// - RMS fills the bar, peak is a short tick
+	// amplitude bar on the right edge
+	// RMS fills the bar, peak is a short tick
 	float barW = 16.0f;
 	float barH = height * 0.34f;
 	float barX = width - barW - 18.0f;
@@ -121,15 +121,15 @@ void Visualizer::draw() {
 	ofSetColor(voiceColor, 200);
 	float rmsH = rmsLevel * barH;
 	float peakH = peakLevel * barH;
-	// - RMS as filled portion from the bottom
+	// RMS as filled portion from the bottom
 	ofDrawRectangle(barX, barY + barH - rmsH, barW, rmsH);
-	// - peak as a white tick
+	// peak as a white tick
 	ofSetColor(255, 255, 255, 220);
 	float peakY = barY + barH - peakH;
 	ofDrawRectangle(barX - 2, peakY - 1, barW + 4, 2);
 
-	// - spectrum at the bottom
-	// - draw a compact bar view, decimated if many bins
+	// spectrum at the bottom
+	// draw a compact bar view, decimated if many bins
 	if (!spectrum.empty()) {
 		float specY = height - 28.0f;
 		float specH = 56.0f;
@@ -138,19 +138,19 @@ void Visualizer::draw() {
 		float barWidth = barStep * 0.75f;
 
 		for (int i = 0; i < bins; i++) {
-			// - map bin index to spectrum index to cover full range
+			// map bin index to spectrum index to cover full range
 			int idx = static_cast<int>(static_cast<float>(i) / bins * spectrum.size());
 			float mag = spectrum[idx];
 			float h = mag * specH;
 			float x = 20.0f + i * barStep;
 			float y = specY - h;
 
-			// - use voice color with alpha scaled by magnitude
+			// use voice color with alpha scaled by magnitude
 			ofSetColor(voiceColor, 90 + static_cast<int>(mag * 120));
 			ofDrawRectangle(x, y, barWidth, h);
 		}
 
-		// - baseline for spectrum
+		// baseline for spectrum
 		ofSetColor(255, 255, 255, 25);
 		ofDrawLine(20, specY, width - 20, specY);
 	}

@@ -6,19 +6,20 @@
 
 void SineVoice::setSampleRate(float sampleRate) {
 	this->sampleRate = sampleRate;
+	envelope.setSampleRate(sampleRate);
 }
 
-// Reset the phase so a note does not click when it starts mid-wave.
 void SineVoice::noteOn(float frequency, float velocity) {
 	this->frequency = frequency;
 	this->velocity = velocity;
 	phase = 0.0f;
 	active = true;
+	envelope.noteOn();
 }
 
-// Silence until the next noteOn.
 void SineVoice::noteOff() {
 	active = false;
+	envelope.noteOff();
 }
 
 // Fill output with one sine sample per frame, copied to all channels.
@@ -29,14 +30,18 @@ void SineVoice::render(float* output, int bufferSize, int nChannels) {
 	const float twoPi = glm::two_pi<float>();
 
 	for (int i = 0; i < bufferSize; i++) {
+		float env = envelope.next();
 		float sample = 0.0f;
 
-		if (active) {
+		if (env > 0.0f) {
 			phase += phaseIncrement;
 			if (phase >= twoPi) {
 				phase -= twoPi;
 			}
-			sample = std::sin(phase) * velocity;
+			sample = std::sin(phase) * velocity * env;
+			if (!envelope.isActive()) {
+				active = false;
+			}
 		}
 
 		for (int c = 0; c < nChannels; c++) {
